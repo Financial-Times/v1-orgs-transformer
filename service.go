@@ -26,7 +26,6 @@ type orgsService interface {
 type orgServiceImpl struct {
 	repository    tmereader.Repository
 	baseURL       string
-	IdMap         map[string]string  //TODO delete it
 	orgLinks      []orgLink
 	taxonomyName  string
 	maxTmeRecords int
@@ -52,7 +51,6 @@ func (s *orgServiceImpl) init() error {
 		return err
 	}
 
-	s.IdMap = make(map[string]string)
 	responseCount := 0
 	log.Printf("Fetching organisations from TME\n")
 	for {
@@ -85,6 +83,7 @@ func createCacheBucket(db *bolt.DB) (error) {
 }
 
 func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
+	//TODO implement 503 response when init is still ongoing
 	if len(s.orgLinks) > 0 {
 		return s.orgLinks, true
 	}
@@ -92,7 +91,7 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool) {
-	//TODO get it from cache
+	//TODO implement 503 response when init is still ongoing
 	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Errorf(err.Error())
@@ -133,7 +132,6 @@ func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB) {
 		t := iTerm.(term)
 		tmeIdentifier := buildTmeIdentifier(t.RawID, s.taxonomyName)
 		uuid := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
-		s.IdMap[uuid] = t.RawID
 		s.orgLinks = append(s.orgLinks, orgLink{APIURL: s.baseURL + uuid})
 		cacheToBeWritten = append(cacheToBeWritten, transformOrg(t, s.taxonomyName))
 	}
@@ -166,7 +164,7 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org) {
 		return nil
 	})
 	if err != nil {
-		log.Errorf("ERROR store: %+v", err) //TODO how to handle?
+		log.Errorf("ERROR store: %+v", err)
 	}
 
 }

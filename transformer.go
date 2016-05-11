@@ -19,8 +19,8 @@ func transformOrg(tmeTerm term, taxonomyName string) org {
 	}
 }
 
-func buildTmeIdentifier(rawId string, tmeTermTaxonomyName string) string {
-	id := base64.StdEncoding.EncodeToString([]byte(rawId))
+func buildTmeIdentifier(rawID string, tmeTermTaxonomyName string) string {
+	id := base64.StdEncoding.EncodeToString([]byte(rawID))
 	taxonomyName := base64.StdEncoding.EncodeToString([]byte(tmeTermTaxonomyName))
 	return id + "-" + taxonomyName
 }
@@ -35,7 +35,7 @@ func (*orgTransformer) UnMarshallTaxonomy(contents []byte) ([]interface{}, error
 	if err != nil {
 		return nil, err
 	}
-	var interfaces []interface{} = make([]interface{}, len(taxonomy.Terms))
+	interfaces := make([]interface{}, len(taxonomy.Terms))
 	for i, d := range taxonomy.Terms {
 		interfaces[i] = d
 	}

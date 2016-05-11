@@ -8,13 +8,14 @@ The service exposes endpoints for getting all the organisations and for getting 
 # Usage
 `go get github.com/Financial-Times/v1-orgs-transformer`
 
-`$GOPATH/bin/v1-orgs-transformer --port=8080 --base-url="http://localhost:8080/transformers/organisations/" --tme-base-url="https://tme-live.internal.ft.com:40001" --tme-username="user" --tme-password="pass"`
+`$GOPATH/bin/v1-orgs-transformer --port=8080 --base-url="http://localhost:8080/transformers/organisations/" --tme-base-url="https://tme.ft.com" --tme-username="user" --tme-password="pass" --token="token"`
 ```
 export|set PORT=8080
 export|set BASE_URL="http://localhost:8080/transformers/organisations/"
-export|set TME_BASE_URL="https://tme-live.internal.ft.com:40001"
+export|set TME_BASE_URL="https://tme.ft.com"
 export|set TME_USERNAME="user"
 export|set TME_PASSWORD="pass"
+export|set TOKEN="token"
 $GOPATH/bin/v1-orgs-transformer
 ```
 
