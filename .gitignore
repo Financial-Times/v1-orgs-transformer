@@ -6,3 +6,5 @@
 *.iml
 v1-orgs-transformer
 .idea/
+*.db
+*.lock
