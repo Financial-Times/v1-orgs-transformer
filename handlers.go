@@ -17,11 +17,21 @@ func newOrgsHandler(service orgsService) orgsHandler {
 }
 
 func (h *orgsHandler) getOrgs(writer http.ResponseWriter, req *http.Request) {
+	if !h.service.isInitialised() {
+		writer.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
 	obj, found := h.service.getOrgs()
 	writeJSONResponse(obj, found, writer)
 }
 
 func (h *orgsHandler) getOrgByUUID(writer http.ResponseWriter, req *http.Request) {
+	if !h.service.isInitialised() {
+		writer.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
 	vars := mux.Vars(req)
 	uuid := vars["uuid"]
 

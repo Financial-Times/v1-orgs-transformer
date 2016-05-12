@@ -13,6 +13,7 @@ import (
 	"os"
 	"time"
 	"crypto/tls"
+	"github.com/sethgrid/pester"
 )
 
 func init() {
@@ -73,26 +74,10 @@ func main() {
 	tmeTaxonomyName := "ON"
 
 	app.Action = func() {
-		tr := &http.Transport{
-			MaxIdleConnsPerHost: 32,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			Dial: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).Dial,
-		}
-		c := &http.Client{
-			Transport: tr,
-			Timeout:   time.Duration(20 * time.Second),
-		}
-
+		client := getResilientClient()
 		modelTransformer := new(orgTransformer)
+		s:= newOrgService(tmereader.NewTmeRepository(client, *tmeBaseURL, *username, *password, *token, *maxRecords, *slices, tmeTaxonomyName, modelTransformer), *baseURL, tmeTaxonomyName, *maxRecords)
 
-		s, err := newOrgService(tmereader.NewTmeRepository(c, *tmeBaseURL, *username, *password, *token, *maxRecords, *slices, tmeTaxonomyName, modelTransformer), *baseURL, tmeTaxonomyName, *maxRecords)
-
-		if err != nil {
-			log.Errorf("Error while creating OrgService: [%v]", err.Error())
-		}
 		h := newOrgsHandler(s)
 		m := mux.NewRouter()
 		m.HandleFunc("/transformers/organisations", h.getOrgs).Methods("GET")
@@ -100,7 +85,7 @@ func main() {
 		http.Handle("/", m)
 
 		log.Printf("listening on %d", *port)
-		err = http.ListenAndServe(fmt.Sprintf(":%d", *port),
+		err := http.ListenAndServe(fmt.Sprintf(":%d", *port),
 			httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry,
 				httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), m)))
 		if err != nil {
@@ -108,4 +93,25 @@ func main() {
 		}
 	}
 	app.Run(os.Args)
+}
+
+func getResilientClient() (*pester.Client) {
+	tr := &http.Transport{
+		MaxIdleConnsPerHost: 32,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		Dial: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial,
+	}
+	c := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(30 * time.Second),
+	}
+	client := pester.NewExtendedClient(c)
+	client.Backoff = pester.ExponentialBackoff
+	client.MaxRetries = 5
+	client.Concurrency = 1
+
+	return client
 }

@@ -7,20 +7,17 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/pborman/uuid"
-	"net/http"
 	"time"
+	"sync"
 )
 
 const cacheBucket = "org"
 const cacheFileName = "cache.db"
 
-type httpClient interface {
-	Do(req *http.Request) (resp *http.Response, err error)
-}
-
 type orgsService interface {
 	getOrgs() ([]orgLink, bool)
 	getOrgByUUID(uuid string) (org, bool)
+	isInitialised() (bool)
 }
 
 type orgServiceImpl struct {
@@ -29,16 +26,23 @@ type orgServiceImpl struct {
 	orgLinks      []orgLink
 	taxonomyName  string
 	maxTmeRecords int
+	initialised bool
 }
 
-func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int) (orgsService, error) {
+func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int) (orgsService) {
+	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false}
+	go func(service *orgServiceImpl) {
+		err := service.init()
+		if err != nil {
+			log.Errorf("Error while creating OrgService: [%v]", err.Error())
+		}
+		service.initialised = true
+	}(s)
+	return s
+}
 
-	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords}
-	err := s.init()
-	if err != nil {
-		return &orgServiceImpl{}, err
-	}
-	return s, nil
+func (s *orgServiceImpl) isInitialised() bool {
+	return s.initialised
 }
 
 func (s *orgServiceImpl) init() error {
@@ -50,7 +54,7 @@ func (s *orgServiceImpl) init() error {
 	if err = createCacheBucket(db); err != nil {
 		return err
 	}
-
+	var wg sync.WaitGroup
 	responseCount := 0
 	log.Printf("Fetching organisations from TME\n")
 	for {
@@ -62,9 +66,11 @@ func (s *orgServiceImpl) init() error {
 			log.Printf("Finished fetching organisations from TME\n")
 			break
 		}
-		s.initOrgsMap(terms, db)
+		wg.Add(1)
+		go s.initOrgsMap(terms, db, &wg)
 		responseCount += s.maxTmeRecords
 	}
+	wg.Wait()
 	log.Printf("Added %d orgs links\n", len(s.orgLinks))
 	return nil
 }
@@ -83,7 +89,6 @@ func createCacheBucket(db *bolt.DB) (error) {
 }
 
 func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
-	//TODO implement 503 response when init is still ongoing
 	if len(s.orgLinks) > 0 {
 		return s.orgLinks, true
 	}
@@ -91,7 +96,6 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool) {
-	//TODO implement 503 response when init is still ongoing
 	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Errorf(err.Error())
@@ -126,7 +130,7 @@ func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool) {
 
 }
 
-func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB) {
+func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB, wg *sync.WaitGroup) {
 	var cacheToBeWritten []org
 	for _, iTerm := range terms {
 		t := iTerm.(term)
@@ -135,16 +139,12 @@ func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB) {
 		s.orgLinks = append(s.orgLinks, orgLink{APIURL: s.baseURL + uuid})
 		cacheToBeWritten = append(cacheToBeWritten, transformOrg(t, s.taxonomyName))
 	}
-	storeOrgToCache(db, cacheToBeWritten)
+
+	go storeOrgToCache(db, cacheToBeWritten, wg)
 }
 
-func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org) {
-	start := time.Now()
-
-	defer func(startTime time.Time) {
-		log.Printf("Done, elapsed time: %+v, size: %v\n", time.Since(startTime), len(cacheToBeWritten))
-	}(start)
-
+func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
+	defer wg.Done()
 	err := db.Batch(func(tx *bolt.Tx) error {
 
 		bucket := tx.Bucket([]byte(cacheBucket))
