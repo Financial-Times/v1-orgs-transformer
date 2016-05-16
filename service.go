@@ -7,8 +7,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/pborman/uuid"
-	"time"
 	"sync"
+	"time"
 )
 
 const cacheBucket = "org"
@@ -16,8 +16,8 @@ const cacheFileName = "cache.db"
 
 type orgsService interface {
 	getOrgs() ([]orgLink, bool)
-	getOrgByUUID(uuid string) (org, bool)
-	isInitialised() (bool)
+	getOrgByUUID(uuid string) (org, bool, error)
+	isInitialised() bool
 }
 
 type orgServiceImpl struct {
@@ -26,10 +26,10 @@ type orgServiceImpl struct {
 	orgLinks      []orgLink
 	taxonomyName  string
 	maxTmeRecords int
-	initialised bool
+	initialised   bool
 }
 
-func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int) (orgsService) {
+func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int) orgsService {
 	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false}
 	go func(service *orgServiceImpl) {
 		err := service.init()
@@ -48,6 +48,7 @@ func (s *orgServiceImpl) isInitialised() bool {
 func (s *orgServiceImpl) init() error {
 	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
+		log.Errorf("ERROR opening cache file for init: %v", err.Error())
 		return err
 	}
 	defer db.Close()
@@ -63,7 +64,7 @@ func (s *orgServiceImpl) init() error {
 			return err
 		}
 		if len(terms) < 1 {
-			log.Printf("Finished fetching organisations from TME\n")
+			log.Printf("Finished fetching organisations from TME. Waiting subroutines to terminate\n")
 			break
 		}
 		wg.Add(1)
@@ -75,11 +76,13 @@ func (s *orgServiceImpl) init() error {
 	return nil
 }
 
-func createCacheBucket(db *bolt.DB) (error) {
+func createCacheBucket(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		tx.DeleteBucket([]byte(cacheBucket))
-
-		_, err := tx.CreateBucket([]byte(cacheBucket))
+		err := tx.DeleteBucket([]byte(cacheBucket))
+		if err != nil {
+			log.Warnf("Cache bucket [%v] could not be deleted\n", cacheBucket)
+		}
+		_, err = tx.CreateBucket([]byte(cacheBucket))
 		if err != nil {
 			return err
 		}
@@ -95,11 +98,11 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
 	return s.orgLinks, false
 }
 
-func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool) {
-	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
+func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
+	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{ReadOnly: true, Timeout: 10 * time.Second})
 	if err != nil {
-		log.Errorf(err.Error())
-		return org{}, false
+		log.Errorf("ERROR opening cache file for [%v]: %v", uuid, err.Error())
+		return org{}, false, err
 	}
 	defer db.Close()
 	var cachedValue []byte
@@ -113,20 +116,20 @@ func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool) {
 	})
 
 	if err != nil {
-		log.Errorf(err.Error())
-		return org{}, false
+		log.Errorf("ERROR reading from cache file for [%v]: %v", uuid, err.Error())
+		return org{}, false, err
 	}
 	if cachedValue == nil || len(cachedValue) == 0 {
-		log.Errorf(err.Error())
-		return org{}, false
+		log.Infof("INFO No cached value for [%v]", uuid)
+		return org{}, false, nil
 	}
 	var cachedOrg org
 	err = json.Unmarshal(cachedValue, &cachedOrg)
 	if err != nil {
-		log.Errorf(err.Error())
-		return org{}, false
+		log.Errorf("ERROR unmarshalling cached value for [%v]: %v", uuid, err.Error())
+		return org{}, true, err
 	}
-	return cachedOrg, true
+	return cachedOrg, true, nil
 
 }
 
@@ -149,7 +152,7 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
 
 		bucket := tx.Bucket([]byte(cacheBucket))
 		if bucket == nil {
-			return fmt.Errorf("Bucket %v not found!", cacheBucket)
+			return fmt.Errorf("Cache bucket [%v] not found!", cacheBucket)
 		}
 		for _, anOrg := range cacheToBeWritten {
 			marshalledOrg, err := json.Marshal(anOrg)
@@ -164,7 +167,7 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
 		return nil
 	})
 	if err != nil {
-		log.Errorf("ERROR store: %+v", err)
+		log.Errorf("ERROR storing to cache: %+v", err)
 	}
 
 }

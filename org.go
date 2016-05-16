@@ -1,11 +1,11 @@
 package main
 
-//TODO model aligned with v2-org-transformer
+//model aligned with v2-org-transformer
 type org struct {
-	UUID          string       `json:"uuid"`
-	ProperName    string       `json:"properName"`
-	Type          string       `json:"type"`
-	Identifiers   []identifier `json:"identifiers,omitempty"`
+	UUID        string       `json:"uuid"`
+	ProperName  string       `json:"properName"`
+	Type        string       `json:"type"`
+	Identifiers []identifier `json:"identifiers,omitempty"`
 }
 
 type identifier struct {

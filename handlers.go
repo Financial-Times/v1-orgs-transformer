@@ -35,7 +35,10 @@ func (h *orgsHandler) getOrgByUUID(writer http.ResponseWriter, req *http.Request
 	vars := mux.Vars(req)
 	uuid := vars["uuid"]
 
-	obj, found := h.service.getOrgByUUID(uuid)
+	obj, found, err := h.service.getOrgByUUID(uuid)
+	if err != nil {
+		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+	}
 	writeJSONResponse(obj, found, writer)
 }
 

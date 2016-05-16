@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	"github.com/Financial-Times/tme-reader/tmereader"
@@ -8,12 +9,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"github.com/rcrowley/go-metrics"
+	"github.com/sethgrid/pester"
 	"net"
 	"net/http"
 	"os"
 	"time"
-	"crypto/tls"
-	"github.com/sethgrid/pester"
 )
 
 func init() {
@@ -64,11 +64,11 @@ func main() {
 		Desc:   "Maximum records to be queried to TME",
 		EnvVar: "MAX_RECORDS",
 	})
-	slices := app.Int(cli.IntOpt{
-		Name:   "slices",
+	batchSize := app.Int(cli.IntOpt{
+		Name:   "batchSize",
 		Value:  int(10),
 		Desc:   "Number of requests to be executed in parallel to TME",
-		EnvVar: "SLICES",
+		EnvVar: "BATCH_SIZE",
 	})
 
 	tmeTaxonomyName := "ON"
@@ -76,7 +76,20 @@ func main() {
 	app.Action = func() {
 		client := getResilientClient()
 		modelTransformer := new(orgTransformer)
-		s:= newOrgService(tmereader.NewTmeRepository(client, *tmeBaseURL, *username, *password, *token, *maxRecords, *slices, tmeTaxonomyName, modelTransformer), *baseURL, tmeTaxonomyName, *maxRecords)
+		s := newOrgService(
+			tmereader.NewTmeRepository(
+				client,
+				*tmeBaseURL,
+				*username,
+				*password,
+				*token,
+				*maxRecords,
+				*batchSize,
+				tmeTaxonomyName,
+				modelTransformer),
+			*baseURL,
+			tmeTaxonomyName,
+			*maxRecords)
 
 		h := newOrgsHandler(s)
 		m := mux.NewRouter()
@@ -95,10 +108,10 @@ func main() {
 	app.Run(os.Args)
 }
 
-func getResilientClient() (*pester.Client) {
+func getResilientClient() *pester.Client {
 	tr := &http.Transport{
 		MaxIdleConnsPerHost: 32,
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 		Dial: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,

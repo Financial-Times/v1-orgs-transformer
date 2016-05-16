@@ -1,21 +1,21 @@
 package main
 
 import (
-	"github.com/pborman/uuid"
 	"encoding/base64"
 	"encoding/xml"
+	"github.com/pborman/uuid"
 )
 
 func transformOrg(tmeTerm term, taxonomyName string) org {
 	tmeIdentifier := buildTmeIdentifier(tmeTerm.RawID, taxonomyName)
 
 	return org{
-		UUID:          uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String(),
+		UUID:       uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String(),
 		ProperName: tmeTerm.CanonicalName,
-		Identifiers: []identifier {
-			identifier{Authority:"http://api.ft.com/system/FT-TME", IdentifierValue:tmeIdentifier},
+		Identifiers: []identifier{
+			identifier{Authority: "http://api.ft.com/system/FT-TME", IdentifierValue: tmeIdentifier},
 		},
-		Type:          "Organization",
+		Type: "Organisation",
 	}
 }
 
@@ -26,7 +26,6 @@ func buildTmeIdentifier(rawID string, tmeTermTaxonomyName string) string {
 }
 
 type orgTransformer struct {
-
 }
 
 func (*orgTransformer) UnMarshallTaxonomy(contents []byte) ([]interface{}, error) {
