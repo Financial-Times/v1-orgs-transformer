@@ -70,6 +70,12 @@ func main() {
 		Desc:   "Number of requests to be executed in parallel to TME",
 		EnvVar: "BATCH_SIZE",
 	})
+	cacheFileName := app.String(cli.StringOpt{
+		Name:   "cache-file-name",
+		Value:  "cache.db",
+		Desc:   "Cache file name",
+		EnvVar: "CACHE_FILE_NAME",
+	})
 
 	tmeTaxonomyName := "ON"
 
@@ -89,7 +95,8 @@ func main() {
 				modelTransformer),
 			*baseURL,
 			tmeTaxonomyName,
-			*maxRecords)
+			*maxRecords,
+			*cacheFileName)
 
 		h := newOrgsHandler(s)
 		m := mux.NewRouter()

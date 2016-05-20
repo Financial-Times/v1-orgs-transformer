@@ -12,7 +12,6 @@ import (
 )
 
 const cacheBucket = "org"
-const cacheFileName = "cache.db"
 
 type orgsService interface {
 	getOrgs() ([]orgLink, bool)
@@ -27,10 +26,11 @@ type orgServiceImpl struct {
 	taxonomyName  string
 	maxTmeRecords int
 	initialised   bool
+	cacheFileName string
 }
 
-func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int) orgsService {
-	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false}
+func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int, cacheFileName string) orgsService {
+	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false, cacheFileName: cacheFileName}
 	go func(service *orgServiceImpl) {
 		err := service.init()
 		if err != nil {
@@ -46,7 +46,7 @@ func (s *orgServiceImpl) isInitialised() bool {
 }
 
 func (s *orgServiceImpl) init() error {
-	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open(s.cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Errorf("ERROR opening cache file for init: %v", err.Error())
 		return err
@@ -99,7 +99,7 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
-	db, err := bolt.Open(cacheFileName, 0600, &bolt.Options{ReadOnly: true, Timeout: 10 * time.Second})
+	db, err := bolt.Open(s.cacheFileName, 0600, &bolt.Options{ReadOnly: true, Timeout: 10 * time.Second})
 	if err != nil {
 		log.Errorf("ERROR opening cache file for [%v]: %v", uuid, err.Error())
 		return org{}, false, err
