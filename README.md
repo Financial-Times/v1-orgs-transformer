@@ -17,6 +17,7 @@ export|set TME_BASE_URL="https://tme.ft.com"
 export|set TME_USERNAME="user"
 export|set TME_PASSWORD="pass"
 export|set TOKEN="token"
+export|set CACHE_FILE_NAME="cache.db"
 $GOPATH/bin/v1-orgs-transformer
 ```
 
@@ -24,7 +25,7 @@ $GOPATH/bin/v1-orgs-transformer
 
 `docker build -t coco/v1-orgs-transformer .`
 
-`docker run -ti --env BASE_URL=<base url> --env TME_BASE_URL=<structure service url> --env TME_USERNAME=<user> --env TME_PASSWORD=<pass> --env TOKEN=<token> coco/v1-orgs-transformer`
+`docker run -ti --env BASE_URL=<base url> --env TME_BASE_URL=<structure service url> --env TME_USERNAME=<user> --env TME_PASSWORD=<pass> --env TOKEN=<token> --env CACHE_FILE_NAME=<file> coco/v1-orgs-transformer`
 
 # Endpoints
 

@@ -26,7 +26,7 @@ func TestGetOrganisations(t *testing.T) {
 
 	for _, test := range tests {
 		repo := dummyRepo{terms: test.terms, err: test.err}
-		service := newOrgService(&repo, test.baseURL, "ON", 10000)
+		service := newOrgService(&repo, test.baseURL, "ON", 10000, "cache.db")
 		time.Sleep(3 * time.Second) //waiting initialization to be finished
 		actualOrgansiations, found := service.getOrgs()
 		assert.Equal(test.orgs, actualOrgansiations, fmt.Sprintf("%s: Expected organsiations link incorrect", test.name))
@@ -53,7 +53,7 @@ func TestGetOrganisationByUuid(t *testing.T) {
 	}
 	for _, test := range tests {
 		repo := dummyRepo{terms: test.terms, err: test.err}
-		service := newOrgService(&repo, "", "ON", 10000)
+		service := newOrgService(&repo, "", "ON", 10000, "cache.db")
 		time.Sleep(3 * time.Second) //waiting initialization to be finished
 		actualOrganisation, found, err := service.getOrgByUUID(test.uuid)
 		assert.Equal(test.org, actualOrganisation, fmt.Sprintf("%s: Expected organsiation incorrect", test.name))
