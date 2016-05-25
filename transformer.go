@@ -10,7 +10,7 @@ func transformOrg(tmeTerm term, taxonomyName string) org {
 	tmeIdentifier := buildTmeIdentifier(tmeTerm.RawID, taxonomyName)
 	orgUUID := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
 	return org{
-		UUID:  orgUUID,
+		UUID:       orgUUID,
 		ProperName: tmeTerm.CanonicalName,
 		Identifiers: []identifier{
 			identifier{Authority: tmeAuthority, IdentifierValue: tmeIdentifier},

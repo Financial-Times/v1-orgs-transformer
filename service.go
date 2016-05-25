@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	cacheBucket = "org"
+	cacheBucket  = "org"
 	uppAuthority = "http://api.ft.com/system/FT-UPP"
 	tmeAuthority = "http://api.ft.com/system/FT-TME"
 )
