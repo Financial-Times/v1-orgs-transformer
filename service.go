@@ -11,7 +11,11 @@ import (
 	"time"
 )
 
-const cacheBucket = "org"
+const (
+	cacheBucket = "org"
+	uppAuthority = "http://api.ft.com/system/FT-UPP"
+	tmeAuthority = "http://api.ft.com/system/FT-TME"
+)
 
 type orgsService interface {
 	getOrgs() ([]orgLink, bool)

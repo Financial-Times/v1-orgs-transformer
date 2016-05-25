@@ -46,7 +46,8 @@ func TestGetOrganisationByUuid(t *testing.T) {
 	}{
 		{"Success", []term{term{CanonicalName: "European Union", RawID: "Nstein_GL_US_NY_Municipality_942968"}},
 			"6a7edb42-c27a-3186-a0b9-7e3cdc91e16b", org{UUID: "6a7edb42-c27a-3186-a0b9-7e3cdc91e16b", ProperName: "European Union", Identifiers: []identifier{
-				identifier{Authority: "http://api.ft.com/system/FT-TME", IdentifierValue: "TnN0ZWluX0dMX1VTX05ZX011bmljaXBhbGl0eV85NDI5Njg=-T04="}}, Type: "Organisation"}, true, nil},
+				identifier{Authority: tmeAuthority, IdentifierValue: "TnN0ZWluX0dMX1VTX05ZX011bmljaXBhbGl0eV85NDI5Njg=-T04="},
+				identifier{Authority: uppAuthority, IdentifierValue: "6a7edb42-c27a-3186-a0b9-7e3cdc91e16b"}}, Type: "Organisation"}, true, nil},
 		{"Not found", []term{term{CanonicalName: "European Union", RawID: "Nstein_GL_US_NY_Municipality_942968"}},
 			"some uuid", org{}, false, nil},
 		{"Error on init", []term{}, "some uuid", org{}, false, nil},
