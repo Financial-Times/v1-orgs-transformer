@@ -8,12 +8,13 @@ import (
 
 func transformOrg(tmeTerm term, taxonomyName string) org {
 	tmeIdentifier := buildTmeIdentifier(tmeTerm.RawID, taxonomyName)
-
+	orgUUID := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
 	return org{
-		UUID:       uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String(),
+		UUID:       orgUUID,
 		ProperName: tmeTerm.CanonicalName,
 		Identifiers: []identifier{
-			identifier{Authority: "http://api.ft.com/system/FT-TME", IdentifierValue: tmeIdentifier},
+			identifier{Authority: tmeAuthority, IdentifierValue: tmeIdentifier},
+			identifier{Authority: uppAuthority, IdentifierValue: orgUUID},
 		},
 		Type: "Organisation",
 	}
