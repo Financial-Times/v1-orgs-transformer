@@ -92,6 +92,7 @@ func main() {
 				*maxRecords,
 				*batchSize,
 				tmeTaxonomyName,
+				&tmereader.AuthorityFiles{},
 				modelTransformer),
 			*baseURL,
 			tmeTaxonomyName,
