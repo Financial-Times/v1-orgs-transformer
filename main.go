@@ -12,13 +12,10 @@ import (
 	"github.com/sethgrid/pester"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
-
-func init() {
-	log.SetFormatter(new(log.JSONFormatter))
-}
 
 func main() {
 	app := cli.App("v1-orgs-transformer", "A RESTful API for transforming TME Oranisations to UP json")
@@ -98,17 +95,18 @@ func main() {
 			tmeTaxonomyName,
 			*maxRecords,
 			*cacheFileName)
-
-		h := newOrgsHandler(s)
+		defer s.shutdown()
+		handler := newOrgsHandler(s)
 		m := mux.NewRouter()
-		m.HandleFunc("/transformers/organisations", h.getOrgs).Methods("GET")
-		m.HandleFunc("/transformers/organisations/{uuid}", h.getOrgByUUID).Methods("GET")
-		http.Handle("/", m)
+		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
+		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
+		var h http.Handler = m
+		h = httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), h)
+		h = httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry, h)
+		http.Handle("/", h)
 
 		log.Printf("listening on %d", *port)
-		err := http.ListenAndServe(fmt.Sprintf(":%d", *port),
-			httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry,
-				httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), m)))
+		err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 		if err != nil {
 			log.Errorf("Error by listen and serve: %v", err.Error())
 		}
@@ -127,7 +125,7 @@ func getResilientClient() *pester.Client {
 	}
 	c := &http.Client{
 		Transport: tr,
-		Timeout:   time.Duration(30 * time.Second),
+		Timeout:   30 * time.Second,
 	}
 	client := pester.NewExtendedClient(c)
 	client.Backoff = pester.ExponentialBackoff
