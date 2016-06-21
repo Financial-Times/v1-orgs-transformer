@@ -17,10 +17,6 @@ import (
 	"time"
 )
 
-func init() {
-	log.SetFormatter(new(log.JSONFormatter))
-}
-
 func main() {
 	app := cli.App("v1-orgs-transformer", "A RESTful API for transforming TME Oranisations to UP json")
 	username := app.String(cli.StringOpt{
