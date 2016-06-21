@@ -12,6 +12,7 @@ import (
 	"github.com/sethgrid/pester"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
@@ -98,16 +99,17 @@ func main() {
 			*maxRecords,
 			*cacheFileName)
 		defer s.shutdown()
-		h := newOrgsHandler(s)
+		handler := newOrgsHandler(s)
 		m := mux.NewRouter()
-		m.HandleFunc("/transformers/organisations", h.getOrgs).Methods("GET")
-		m.HandleFunc("/transformers/organisations/{uuid}", h.getOrgByUUID).Methods("GET")
-		http.Handle("/", m)
+		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
+		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
+		var h http.Handler = m
+		h = httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), h)
+		h = httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry, h)
+		http.Handle("/", h)
 
 		log.Printf("listening on %d", *port)
-		err := http.ListenAndServe(fmt.Sprintf(":%d", *port),
-			httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry,
-				httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), m)))
+		err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 		if err != nil {
 			log.Errorf("Error by listen and serve: %v", err.Error())
 		}
