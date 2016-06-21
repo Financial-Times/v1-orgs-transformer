@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Financial-Times/tme-reader/tmereader"
 	log "github.com/Sirupsen/logrus"
@@ -21,6 +22,7 @@ type orgsService interface {
 	getOrgs() ([]orgLink, bool)
 	getOrgByUUID(uuid string) (org, bool, error)
 	isInitialised() bool
+	shutdown() error
 }
 
 type orgServiceImpl struct {
@@ -31,6 +33,7 @@ type orgServiceImpl struct {
 	maxTmeRecords int
 	initialised   bool
 	cacheFileName string
+	db            *bolt.DB
 }
 
 func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int, cacheFileName string) orgsService {
@@ -49,14 +52,21 @@ func (s *orgServiceImpl) isInitialised() bool {
 	return s.initialised
 }
 
+func (s *orgServiceImpl) shutdown() error {
+	if s.db == nil {
+		return errors.New("DB not open")
+	}
+	return s.db.Close()
+}
+
 func (s *orgServiceImpl) init() error {
-	db, err := bolt.Open(s.cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	var err error
+	s.db, err = bolt.Open(s.cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Errorf("ERROR opening cache file for init: %v", err.Error())
 		return err
 	}
-	defer db.Close()
-	if err = createCacheBucket(db); err != nil {
+	if err = createCacheBucket(s.db); err != nil {
 		return err
 	}
 	var wg sync.WaitGroup
@@ -72,7 +82,7 @@ func (s *orgServiceImpl) init() error {
 			break
 		}
 		wg.Add(1)
-		go s.initOrgsMap(terms, db, &wg)
+		go s.initOrgsMap(terms, s.db, &wg)
 		responseCount += s.maxTmeRecords
 	}
 	wg.Wait()
@@ -103,14 +113,8 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
-	db, err := bolt.Open(s.cacheFileName, 0600, &bolt.Options{ReadOnly: true, Timeout: 10 * time.Second})
-	if err != nil {
-		log.Errorf("ERROR opening cache file for [%v]: %v", uuid, err.Error())
-		return org{}, false, err
-	}
-	defer db.Close()
 	var cachedValue []byte
-	err = db.View(func(tx *bolt.Tx) error {
+	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(cacheBucket))
 		if bucket == nil {
 			return fmt.Errorf("Bucket %v not found!", cacheBucket)

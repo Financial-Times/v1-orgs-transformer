@@ -97,7 +97,7 @@ func main() {
 			tmeTaxonomyName,
 			*maxRecords,
 			*cacheFileName)
-
+		defer s.shutdown()
 		h := newOrgsHandler(s)
 		m := mux.NewRouter()
 		m.HandleFunc("/transformers/organisations", h.getOrgs).Methods("GET")
