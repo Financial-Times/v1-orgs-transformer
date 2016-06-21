@@ -30,13 +30,13 @@ type orgTransformer struct {
 }
 
 func (*orgTransformer) UnMarshallTaxonomy(contents []byte) ([]interface{}, error) {
-	taxonomy := taxonomy{}
-	err := xml.Unmarshal(contents, &taxonomy)
+	t := taxonomy{}
+	err := xml.Unmarshal(contents, &t)
 	if err != nil {
 		return nil, err
 	}
-	interfaces := make([]interface{}, len(taxonomy.Terms))
-	for i, d := range taxonomy.Terms {
+	interfaces := make([]interface{}, len(t.Terms))
+	for i, d := range t.Terms {
 		interfaces[i] = d
 	}
 	return interfaces, nil

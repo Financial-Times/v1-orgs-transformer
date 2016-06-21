@@ -97,10 +97,7 @@ func createCacheBucket(db *bolt.DB) error {
 			log.Warnf("Cache bucket [%v] could not be deleted\n", cacheBucket)
 		}
 		_, err = tx.CreateBucket([]byte(cacheBucket))
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 
 }
@@ -127,7 +124,7 @@ func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
 		log.Errorf("ERROR reading from cache file for [%v]: %v", uuid, err.Error())
 		return org{}, false, err
 	}
-	if cachedValue == nil || len(cachedValue) == 0 {
+	if len(cachedValue) == 0 {
 		log.Infof("INFO No cached value for [%v]", uuid)
 		return org{}, false, nil
 	}
