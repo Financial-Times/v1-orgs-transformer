@@ -79,3 +79,7 @@ func (s *dummyService) getOrgByUUID(uuid string) (org, bool, error) {
 func (s *dummyService) isInitialised() bool {
 	return s.initialised
 }
+
+func (s *dummyService) shutdown() error {
+	return nil
+}
