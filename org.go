@@ -2,15 +2,16 @@ package main
 
 //model aligned with v2-org-transformer
 type org struct {
-	UUID        string       `json:"uuid"`
-	ProperName  string       `json:"properName"`
-	Type        string       `json:"type"`
-	Identifiers []identifier `json:"identifiers,omitempty"`
+	UUID                   string                 `json:"uuid"`
+	ProperName             string                 `json:"properName"`
+	PrefLabel              string                 `json:"prefLabel"`
+	Type                   string                 `json:"type"`
+	AlternativeIdentifiers alternativeIdentifiers `json:"alternativeIdentifiers,omitempty"`
 }
 
-type identifier struct {
-	Authority       string `json:"authority"`
-	IdentifierValue string `json:"identifierValue"`
+type alternativeIdentifiers struct {
+	TME   []string `json:"TME,omitempty"`
+	Uuids []string `json:"uuids,omitempty"`
 }
 
 type orgLink struct {
