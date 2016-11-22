@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	cacheBucket  = "org"
-	uppAuthority = "http://api.ft.com/system/FT-UPP"
-	tmeAuthority = "http://api.ft.com/system/FT-TME"
+	cacheBucket = "org"
+	// uppAuthority = "http://api.ft.com/system/FT-UPP"
+	// tmeAuthority = "http://api.ft.com/system/FT-TME"
 )
 
 type orgsService interface {
@@ -24,7 +24,7 @@ type orgsService interface {
 	getOrgByUUID(uuid string) (org, bool, error)
 	isInitialised() bool
 	shutdown() error
-	orgCount() int
+	orgCount() (int, error)
 	orgIds() ([]orgUUID, error)
 	orgReload() error
 }
@@ -187,8 +187,19 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
 
 // ADMIN METHODS
 
-func (s *orgServiceImpl) orgCount() int {
-	return len(s.orgUUIDs)
+func (s *orgServiceImpl) orgCount() (int, error) {
+	var count int
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(cacheBucket))
+		if bucket == nil {
+			return fmt.Errorf("Bucket %v not found!", cacheBucket)
+		}
+
+		count = bucket.Stats().KeyN
+		return nil
+	})
+
+	return count, err
 }
 
 func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {

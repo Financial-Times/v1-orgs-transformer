@@ -71,8 +71,12 @@ func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request)
 		writer.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
+	orgCount, err := h.service.orgCount()
+	if err != nil {
+		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+	}
 
-	writeJSONResponse(h.service.orgCount(), true, writer)
+	writeJSONResponse(orgCount, true, writer)
 }
 
 func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {
