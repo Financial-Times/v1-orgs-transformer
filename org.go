@@ -19,5 +19,5 @@ type orgLink struct {
 }
 
 type orgUUID struct {
-	UUID string `json:"uuid"`
+	UUID string `json:"ID"`
 }
