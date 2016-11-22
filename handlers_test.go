@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 )
 
 const testUUID = "bba39990-c78d-3629-ae83-808c333c6dbc"
@@ -81,5 +82,16 @@ func (s *dummyService) isInitialised() bool {
 }
 
 func (s *dummyService) shutdown() error {
+	return nil
+}
+
+//TODO
+func (s *dummyService) orgCount() (int, error) {
+	return 0, nil
+}
+func (s *dummyService) orgIds() ([]orgUUID, error) {
+	return nil, nil
+}
+func (s *dummyService) orgReload() error {
 	return nil
 }
