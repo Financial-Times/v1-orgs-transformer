@@ -10,7 +10,6 @@ import (
 	"github.com/Financial-Times/tme-reader/tmereader"
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
-	"github.com/pborman/uuid"
 )
 
 const (
@@ -20,7 +19,7 @@ const (
 )
 
 type orgsService interface {
-	getOrgs() ([]orgLink, bool)
+	getOrgs() ([]orgLink, error)
 	getOrgByUUID(uuid string) (org, bool, error)
 	isInitialised() bool
 	shutdown() error
@@ -32,7 +31,6 @@ type orgsService interface {
 type orgServiceImpl struct {
 	repository    tmereader.Repository
 	baseURL       string
-	orgUUIDs      []string
 	taxonomyName  string
 	maxTmeRecords int
 	initialised   bool
@@ -90,7 +88,9 @@ func (s *orgServiceImpl) init() error {
 		responseCount += s.maxTmeRecords
 	}
 	wg.Wait()
-	log.Printf("Added %d orgs UUIDs\n", len(s.orgUUIDs))
+
+	count, _ := s.orgCount()
+	log.Printf("Added %d orgs UUIDs\n", count)
 	return nil
 }
 
@@ -106,15 +106,23 @@ func createCacheBucket(db *bolt.DB) error {
 
 }
 
-func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
-	links := make([]orgLink, len(s.orgUUIDs))
-	if len(s.orgUUIDs) > 0 {
-		for _, uuid := range s.orgUUIDs {
-			links = append(links, orgLink{APIURL: uuid})
+func (s *orgServiceImpl) getOrgs() ([]orgLink, error) {
+
+	var linkList []orgLink
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(cacheBucket))
+		if bucket == nil {
+			return fmt.Errorf("Bucket %v not found!", cacheBucket)
 		}
-		return links, true
-	}
-	return links, false
+
+		bucket.ForEach(func(k, v []byte) error {
+			linkList = append(linkList, orgLink{APIURL: s.baseURL + string(k)})
+			return nil
+		})
+		return nil
+	})
+
+	return linkList, err
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
@@ -149,11 +157,7 @@ func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
 func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB, wg *sync.WaitGroup) {
 	var cacheToBeWritten []org
 	for _, iTerm := range terms {
-		t := iTerm.(term)
-		tmeIdentifier := buildTmeIdentifier(t.RawID, s.taxonomyName)
-		uuid := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
-		s.orgUUIDs = append(s.orgUUIDs, uuid)
-		cacheToBeWritten = append(cacheToBeWritten, transformOrg(t, s.taxonomyName))
+		cacheToBeWritten = append(cacheToBeWritten, transformOrg(iTerm.(term), s.taxonomyName))
 	}
 
 	go storeOrgToCache(db, cacheToBeWritten, wg)

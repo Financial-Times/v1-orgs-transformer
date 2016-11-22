@@ -23,8 +23,12 @@ func (h *orgsHandler) getOrgs(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	obj, found := h.service.getOrgs()
-	writeJSONResponse(obj, found, writer)
+	obj, err := h.service.getOrgs()
+	if err != nil {
+		log.Errorf("Error calling getOrgs service: %s", err.Error())
+		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+	}
+	writeJSONResponse(obj, true, writer)
 }
 
 func (h *orgsHandler) getOrgByUUID(writer http.ResponseWriter, req *http.Request) {
@@ -71,12 +75,13 @@ func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request)
 		writer.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
-	orgCount, err := h.service.orgCount()
+
+	obj, err := h.service.orgCount()
 	if err != nil {
+		log.Errorf("Error calling orgCount service: %s", err.Error())
 		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
 	}
-
-	writeJSONResponse(orgCount, true, writer)
+	writeJSONResponse(obj, true, writer)
 }
 
 func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {
