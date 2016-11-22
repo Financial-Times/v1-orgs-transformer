@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/Financial-Times/tme-reader/tmereader"
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/pborman/uuid"
-	"sync"
-	"time"
 )
 
 const (
@@ -23,12 +24,15 @@ type orgsService interface {
 	getOrgByUUID(uuid string) (org, bool, error)
 	isInitialised() bool
 	shutdown() error
+	orgCount() int
+	orgIds() ([]orgUUID, error)
+	orgReload() error
 }
 
 type orgServiceImpl struct {
 	repository    tmereader.Repository
 	baseURL       string
-	orgLinks      []orgLink
+	orgUUIDs      []string
 	taxonomyName  string
 	maxTmeRecords int
 	initialised   bool
@@ -86,7 +90,7 @@ func (s *orgServiceImpl) init() error {
 		responseCount += s.maxTmeRecords
 	}
 	wg.Wait()
-	log.Printf("Added %d orgs links\n", len(s.orgLinks))
+	log.Printf("Added %d orgs UUIDs\n", len(s.orgUUIDs))
 	return nil
 }
 
@@ -103,10 +107,14 @@ func createCacheBucket(db *bolt.DB) error {
 }
 
 func (s *orgServiceImpl) getOrgs() ([]orgLink, bool) {
-	if len(s.orgLinks) > 0 {
-		return s.orgLinks, true
+	links := make([]orgLink, len(s.orgUUIDs))
+	if len(s.orgUUIDs) > 0 {
+		for _, uuid := range s.orgUUIDs {
+			links = append(links, orgLink{APIURL: uuid})
+		}
+		return links, true
 	}
-	return s.orgLinks, false
+	return links, false
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
@@ -144,7 +152,7 @@ func (s *orgServiceImpl) initOrgsMap(terms []interface{}, db *bolt.DB, wg *sync.
 		t := iTerm.(term)
 		tmeIdentifier := buildTmeIdentifier(t.RawID, s.taxonomyName)
 		uuid := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
-		s.orgLinks = append(s.orgLinks, orgLink{APIURL: s.baseURL + uuid})
+		s.orgUUIDs = append(s.orgUUIDs, uuid)
 		cacheToBeWritten = append(cacheToBeWritten, transformOrg(t, s.taxonomyName))
 	}
 
@@ -175,4 +183,34 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
 		log.Errorf("ERROR storing to cache: %+v", err)
 	}
 
+}
+
+// ADMIN METHODS
+
+func (s *orgServiceImpl) orgCount() int {
+	return len(s.orgUUIDs)
+}
+
+func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {
+	var uuidList []orgUUID
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(cacheBucket))
+		if bucket == nil {
+			return fmt.Errorf("Bucket %v not found!", cacheBucket)
+		}
+
+		log.Printf("List created, size = %d", bucket.Stats().KeyN)
+
+		bucket.ForEach(func(k, v []byte) error {
+			uuidList = append(uuidList, orgUUID{UUID: string(k)})
+			return nil
+		})
+		return nil
+	})
+
+	return uuidList, err
+}
+
+func (s *orgServiceImpl) orgReload() error {
+	return nil
 }

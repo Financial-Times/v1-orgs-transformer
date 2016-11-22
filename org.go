@@ -17,3 +17,7 @@ type alternativeIdentifiers struct {
 type orgLink struct {
 	APIURL string `json:"apiUrl"`
 }
+
+type orgUUID struct {
+	UUID string `json:"uuid"`
+}

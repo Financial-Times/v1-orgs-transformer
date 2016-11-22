@@ -3,6 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"time"
+
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	"github.com/Financial-Times/tme-reader/tmereader"
 	log "github.com/Sirupsen/logrus"
@@ -10,11 +16,6 @@ import (
 	"github.com/jawher/mow.cli"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sethgrid/pester"
-	"net"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"time"
 )
 
 func main() {
@@ -100,6 +101,10 @@ func main() {
 		m := mux.NewRouter()
 		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
 		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
+		m.HandleFunc("/transformers/organisations/__count", handler.getOrgCount).Methods("GET")
+		m.HandleFunc("/transformers/organisations/__ids", handler.getOrgIds).Methods("GET")
+		m.HandleFunc("/transformers/organisations/__reload", handler.reloadOrgs).Methods("POST")
+
 		var h http.Handler = m
 		h = httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), h)
 		h = httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry, h)

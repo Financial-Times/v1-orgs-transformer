@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"net/http"
 )
 
 type orgsHandler struct {
@@ -61,4 +62,36 @@ func writeJSONResponse(obj interface{}, found bool, writer http.ResponseWriter) 
 func writeJSONError(w http.ResponseWriter, errorMsg string, statusCode int) {
 	w.WriteHeader(statusCode)
 	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", errorMsg))
+}
+
+// ADMIN HANDLERS
+
+func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request) {
+	if !h.service.isInitialised() {
+		writer.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	writeJSONResponse(h.service.orgCount(), true, writer)
+}
+
+func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {
+	if !h.service.isInitialised() {
+		writer.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	orgUUIDs, err := h.service.orgIds()
+	if err != nil {
+		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+	}
+
+	writer.Header().Add("Content-Type", "application/json")
+	enc := json.NewEncoder(writer)
+	for _, u := range orgUUIDs {
+		enc.Encode(u)
+	}
+}
+
+func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) {
+
 }
