@@ -99,11 +99,11 @@ func main() {
 		defer s.shutdown()
 		handler := newOrgsHandler(s)
 		m := mux.NewRouter()
-		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
-		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
 		m.HandleFunc("/transformers/organisations/__count", handler.getOrgCount).Methods("GET")
 		m.HandleFunc("/transformers/organisations/__ids", handler.getOrgIds).Methods("GET")
 		m.HandleFunc("/transformers/organisations/__reload", handler.reloadOrgs).Methods("POST")
+		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
+		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
 
 		var h http.Handler = m
 		h = httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), h)

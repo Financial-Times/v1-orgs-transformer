@@ -29,6 +29,7 @@ type orgsService interface {
 }
 
 type orgServiceImpl struct {
+	sync.RWMutex
 	repository    tmereader.Repository
 	baseURL       string
 	taxonomyName  string
@@ -45,13 +46,21 @@ func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName strin
 		if err != nil {
 			log.Errorf("Error while creating OrgService: [%v]", err.Error())
 		}
-		service.initialised = true
+		s.setInitialised(true)
 	}(s)
 	return s
 }
 
 func (s *orgServiceImpl) isInitialised() bool {
+	s.RLock()
+	defer s.RUnlock()
 	return s.initialised
+}
+
+func (s *orgServiceImpl) setInitialised(val bool) {
+	s.Lock()
+	defer s.Unlock()
+	s.initialised = val
 }
 
 func (s *orgServiceImpl) shutdown() error {
@@ -61,19 +70,35 @@ func (s *orgServiceImpl) shutdown() error {
 	return s.db.Close()
 }
 
-func (s *orgServiceImpl) init() error {
+func (s *orgServiceImpl) openDB() error {
+	s.Lock()
+	defer s.Unlock()
 	var err error
 	s.db, err = bolt.Open(s.cacheFileName, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Errorf("ERROR opening cache file for init: %v", err.Error())
 		return err
 	}
-	if err = createCacheBucket(s.db); err != nil {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		err := tx.DeleteBucket([]byte(cacheBucket))
+		if err != nil {
+			log.Warnf("Cache bucket [%v] could not be deleted\n", cacheBucket)
+		}
+		_, err = tx.CreateBucket([]byte(cacheBucket))
 		return err
-	}
+	})
+}
+
+func (s *orgServiceImpl) init() error {
 	var wg sync.WaitGroup
 	responseCount := 0
 	log.Printf("Fetching organisations from TME\n")
+
+	err := s.openDB()
+	if err != nil {
+		return err
+	}
+
 	for {
 		terms, err := s.repository.GetTmeTermsFromIndex(responseCount)
 		if err != nil {
@@ -94,20 +119,9 @@ func (s *orgServiceImpl) init() error {
 	return nil
 }
 
-func createCacheBucket(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		err := tx.DeleteBucket([]byte(cacheBucket))
-		if err != nil {
-			log.Warnf("Cache bucket [%v] could not be deleted\n", cacheBucket)
-		}
-		_, err = tx.CreateBucket([]byte(cacheBucket))
-		return err
-	})
-
-}
-
 func (s *orgServiceImpl) getOrgs() ([]orgLink, error) {
-
+	s.RLock()
+	defer s.RUnlock()
 	var linkList []orgLink
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(cacheBucket))
@@ -126,6 +140,8 @@ func (s *orgServiceImpl) getOrgs() ([]orgLink, error) {
 }
 
 func (s *orgServiceImpl) getOrgByUUID(uuid string) (org, bool, error) {
+	s.RLock()
+	defer s.RUnlock()
 	var cachedValue []byte
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(cacheBucket))
@@ -189,7 +205,7 @@ func storeOrgToCache(db *bolt.DB, cacheToBeWritten []org, wg *sync.WaitGroup) {
 
 }
 
-// ADMIN METHODS
+// HELPER METHODS
 
 func (s *orgServiceImpl) orgCount() (int, error) {
 	var count int
@@ -227,5 +243,10 @@ func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {
 }
 
 func (s *orgServiceImpl) orgReload() error {
-	return nil
+	err := s.shutdown()
+	if err != nil {
+		return err
+	}
+
+	return s.init()
 }

@@ -37,9 +37,8 @@ func runTestForOrgs(test testSuiteForOrgs, assert *assert.Assertions) {
 	service := newOrgService(&repo, test.baseURL, "ON", 10000, "test1.db")
 	defer service.shutdown()
 	time.Sleep(3 * time.Second) //waiting initialization to be finished
-	actualOrgansiations, found := service.getOrgs()
+	actualOrgansiations, _ := service.getOrgs()
 	assert.Equal(test.orgs, actualOrgansiations, fmt.Sprintf("%s: Expected organsiations link incorrect", test.name))
-	assert.Equal(test.found, found)
 }
 
 type testSuiteForOrg struct {
