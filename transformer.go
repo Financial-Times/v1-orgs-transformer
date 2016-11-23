@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/base64"
 	"encoding/xml"
+
 	"github.com/pborman/uuid"
 )
 
 func transformOrg(tmeTerm term, taxonomyName string) org {
 	tmeIdentifier := buildTmeIdentifier(tmeTerm.RawID, taxonomyName)
 	orgUUID := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
+	orgAliasList := buildAliasList(tmeTerm.Aliases)
 	return org{
 		UUID:       orgUUID,
 		ProperName: tmeTerm.CanonicalName,
@@ -17,7 +19,8 @@ func transformOrg(tmeTerm term, taxonomyName string) org {
 			TME:   []string{tmeIdentifier},
 			Uuids: []string{orgUUID},
 		},
-		Type: "Organisation",
+		Type:    "Organisation",
+		Aliases: orgAliasList,
 	}
 }
 
@@ -25,6 +28,14 @@ func buildTmeIdentifier(rawID string, tmeTermTaxonomyName string) string {
 	id := base64.StdEncoding.EncodeToString([]byte(rawID))
 	taxonomyName := base64.StdEncoding.EncodeToString([]byte(tmeTermTaxonomyName))
 	return id + "-" + taxonomyName
+}
+
+func buildAliasList(aList aliases) []string {
+	aliasList := make([]string, len(aList.Alias))
+	for k, v := range aList.Alias {
+		aliasList[k] = v.Name
+	}
+	return aliasList
 }
 
 type orgTransformer struct {
