@@ -100,6 +100,7 @@ func (s *orgServiceImpl) init() error {
 	}
 
 	for {
+		log.Printf("Getting terms for responseCount %d", responseCount)
 		terms, err := s.repository.GetTmeTermsFromIndex(responseCount)
 		if err != nil {
 			return err
