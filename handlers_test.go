@@ -90,7 +90,6 @@ func (s *dummyService) shutdown() error {
 	return nil
 }
 
-//TODO
 func (s *dummyService) orgCount() (int, error) {
 	return len(s.orgs), nil
 }
