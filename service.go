@@ -229,8 +229,6 @@ func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {
 			return fmt.Errorf("Bucket %v not found!", cacheBucket)
 		}
 
-		log.Printf("List created, size = %d", bucket.Stats().KeyN)
-
 		bucket.ForEach(func(k, v []byte) error {
 			uuidList = append(uuidList, orgUUID{UUID: string(k)})
 			return nil
