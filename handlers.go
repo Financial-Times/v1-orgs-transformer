@@ -26,7 +26,7 @@ func (h *orgsHandler) getOrgs(writer http.ResponseWriter, req *http.Request) {
 	obj, err := h.service.getOrgs()
 	if err != nil {
 		log.Errorf("Error calling getOrgs service: %s", err.Error())
-		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
 	writeJSONResponse(obj, true, writer)
 }
@@ -42,7 +42,7 @@ func (h *orgsHandler) getOrgByUUID(writer http.ResponseWriter, req *http.Request
 
 	obj, found, err := h.service.getOrgByUUID(uuid)
 	if err != nil {
-		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
 	writeJSONResponse(obj, found, writer)
 }
@@ -58,14 +58,14 @@ func writeJSONResponse(obj interface{}, found bool, writer http.ResponseWriter) 
 	enc := json.NewEncoder(writer)
 	if err := enc.Encode(obj); err != nil {
 		log.Errorf("Error on json encoding=%v\n", err)
-		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func writeJSONError(w http.ResponseWriter, errorMsg string, statusCode int) {
+func writeJSONMessage(w http.ResponseWriter, msg string, statusCode int) {
 	w.WriteHeader(statusCode)
-	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", errorMsg))
+	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", msg))
 }
 
 // ADMIN HANDLERS
@@ -79,7 +79,7 @@ func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request)
 	obj, err := h.service.orgCount()
 	if err != nil {
 		log.Errorf("Error calling orgCount service: %s", err.Error())
-		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
 	writeJSONResponse(obj, true, writer)
 }
@@ -91,7 +91,7 @@ func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {
 	}
 	orgUUIDs, err := h.service.orgIds()
 	if err != nil {
-		writeJSONError(writer, err.Error(), http.StatusInternalServerError)
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
 
 	writer.Header().Add("Content-Type", "application/json")
@@ -102,5 +102,9 @@ func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {
 }
 
 func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) {
-
+	err := h.service.orgReload()
+	if err != nil {
+		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
+	}
+	writeJSONMessage(writer, "Reload successful", http.StatusOK)
 }
