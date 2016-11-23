@@ -1,6 +1,6 @@
 # v1-orgs-transformer
 
-[![Circle CI](https://circleci.com/gh/Financial-Times/v1-orgs-transformer/tree/master.png?style=shield)](https://circleci.com/gh/Financial-Times/v1-orgs-transformer/tree/master)
+[![CircleCI](https://circleci.com/gh/Financial-Times/v1-orgs-transformer.svg?style=svg)](https://circleci.com/gh/Financial-Times/v1-orgs-transformer) [![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/v1-orgs-transformer)](https://goreportcard.com/report/github.com/Financial-Times/v1-orgs-transformer) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/v1-orgs-transformer/badge.svg?branch=master)](https://coveralls.io/github/Financial-Times/v1-orgs-transformer?branch=master)
 
 Retrieves Organisations taxonomy from TME and transforms the organisations to the internal UP json model.
 The service exposes endpoints for getting all the organisations and for getting organisation by uuid.
