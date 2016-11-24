@@ -29,5 +29,32 @@ $GOPATH/bin/v1-orgs-transformer
 
 # Endpoints
 
-* `/transformers/organisations` - Get all organisations as APIURLs
-* `/transformers/organisations/{uuid}` - Get organisation data of the given uuid
+* `GET /transformers/organisations`
+    * Returns a JSON list of APIURLs to each organisation stored in the transformer cache.
+    * A successful GET returns a 200.
+
+* `GET /transformers/organisations/{uuid}` 
+    * Get organisation data of the given uuid
+    * Returns a 200 if the organisation is found, a 404 if not.
+
+* `GET /transformers/organisations/__ids`
+    * Gives a list of JSON objects containing each ID of an organisation
+    * A successful GET returns a 200.
+
+* `GET /transformers/organisations/__count`
+    * Gives the number of organisations stored in the cache.
+    * A successful GET returns a 200.
+
+* `POST /transformers/organisations/__reload`
+    * Reloads the information from TME and rebuilds the cache.
+    * A successful POST returns a 200.
+
+## Admin endpoints
+* Healthcheck - `/__health`
+* Ping - `/__ping` or `/ping`
+* Build-info - `/__build-info` or `/build-info`
+* Good-to-go - `__gtg`
+
+
+
+
