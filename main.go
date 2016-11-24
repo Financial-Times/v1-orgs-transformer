@@ -9,7 +9,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/Financial-Times/go-fthealth/v1a"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
+	"github.com/Financial-Times/service-status-go/gtg"
+	status "github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/Financial-Times/tme-reader/tmereader"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -98,14 +101,25 @@ func main() {
 			*cacheFileName)
 		defer s.shutdown()
 		handler := newOrgsHandler(s)
-		m := mux.NewRouter()
-		m.HandleFunc("/transformers/organisations/__count", handler.getOrgCount).Methods("GET")
-		m.HandleFunc("/transformers/organisations/__ids", handler.getOrgIds).Methods("GET")
-		m.HandleFunc("/transformers/organisations/__reload", handler.reloadOrgs).Methods("POST")
-		m.HandleFunc("/transformers/organisations/{uuid}", handler.getOrgByUUID).Methods("GET")
-		m.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
+		servicesRouter := mux.NewRouter()
+		servicesRouter.HandleFunc(status.PingPath, status.PingHandler)
+		servicesRouter.HandleFunc(status.PingPathDW, status.PingHandler)
+		servicesRouter.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
+		servicesRouter.HandleFunc(status.BuildInfoPathDW, status.BuildInfoHandler)
 
-		var h http.Handler = m
+		servicesRouter.HandleFunc("/__health", v1a.Handler("V1 Org Transformer Healthchecks", "Checks for the health of the service", handler.HealthCheck()))
+
+		g2gHandler := status.NewGoodToGoHandler(gtg.StatusChecker(handler.getGTG))
+		servicesRouter.HandleFunc(status.GTGPath, g2gHandler)
+
+		servicesRouter.HandleFunc("/transformers/organisations/__count", handler.getOrgCount).Methods("GET")
+		servicesRouter.HandleFunc("/transformers/organisations/__ids", handler.getOrgIds).Methods("GET")
+		servicesRouter.HandleFunc("/transformers/organisations/__reload", handler.reloadOrgs).Methods("POST")
+
+		servicesRouter.HandleFunc("/transformers/organisations/{uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})}", handler.getOrgByUUID).Methods("GET")
+		servicesRouter.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
+
+		var h http.Handler = servicesRouter
 		h = httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), h)
 		h = httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry, h)
 		http.Handle("/", h)

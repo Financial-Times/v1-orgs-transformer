@@ -93,6 +93,7 @@ func (s *dummyService) shutdown() error {
 func (s *dummyService) orgCount() (int, error) {
 	return len(s.orgs), nil
 }
+
 func (s *dummyService) orgIds() ([]orgUUID, error) {
 	var orgUUIDs []orgUUID
 	for _, sub := range s.orgs {
@@ -100,6 +101,11 @@ func (s *dummyService) orgIds() ([]orgUUID, error) {
 	}
 	return orgUUIDs, nil
 }
+
 func (s *dummyService) orgReload() error {
 	return nil
+}
+
+func (s *dummyService) isDataLoaded() bool {
+	return true
 }

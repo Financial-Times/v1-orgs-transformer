@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/Financial-Times/go-fthealth/v1a"
+	"github.com/Financial-Times/service-status-go/gtg"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 )
@@ -107,4 +110,27 @@ func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) 
 		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
 	writeJSONMessage(writer, "Reload successful", http.StatusOK)
+}
+
+func (h *orgsHandler) HealthCheck() v1a.Check {
+	return v1a.Check{
+		BusinessImpact:   "Unable to respond to requests",
+		Name:             "Check service has finished initilising.",
+		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
+		Severity:         1,
+		TechnicalSummary: "Cannot serve any content as data not loaded.",
+		Checker: func() (string, error) {
+			if h.service.isInitialised() {
+				return "Service is up and running", nil
+			}
+			return "Error as service initilising", errors.New("Service is initilising.")
+		},
+	}
+}
+
+func (h *orgsHandler) getGTG() gtg.Status {
+	if h.service.isInitialised() && h.service.isDataLoaded() {
+		return gtg.Status{GoodToGo: true}
+	}
+	return gtg.Status{GoodToGo: false}
 }

@@ -20,6 +20,7 @@ type orgsService interface {
 	getOrgs() ([]orgLink, error)
 	getOrgByUUID(uuid string) (org, bool, error)
 	isInitialised() bool
+	isDataLoaded() bool
 	shutdown() error
 	orgCount() (int, error)
 	orgIds() ([]orgUUID, error)
@@ -33,18 +34,19 @@ type orgServiceImpl struct {
 	taxonomyName  string
 	maxTmeRecords int
 	initialised   bool
+	dataLoaded    bool
 	cacheFileName string
 	db            *bolt.DB
 }
 
 func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int, cacheFileName string) orgsService {
-	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false, cacheFileName: cacheFileName}
+	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: true, dataLoaded: false, cacheFileName: cacheFileName}
 	go func(service *orgServiceImpl) {
 		err := service.init()
 		if err != nil {
 			log.Errorf("Error while creating OrgService: [%v]", err.Error())
 		}
-		s.setInitialised(true)
+		s.setDataLoaded(true)
 	}(s)
 	return s
 }
@@ -59,6 +61,18 @@ func (s *orgServiceImpl) setInitialised(val bool) {
 	s.Lock()
 	defer s.Unlock()
 	s.initialised = val
+}
+
+func (s *orgServiceImpl) isDataLoaded() bool {
+	s.RLock()
+	defer s.RUnlock()
+	return s.dataLoaded
+}
+
+func (s *orgServiceImpl) setDataLoaded(val bool) {
+	s.Lock()
+	defer s.Unlock()
+	s.dataLoaded = val
 }
 
 func (s *orgServiceImpl) shutdown() error {
