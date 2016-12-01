@@ -236,6 +236,8 @@ func (s *orgServiceImpl) orgCount() (int, error) {
 }
 
 func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {
+	s.RLock()
+	defer s.RUnlock()
 	var uuidList []orgUUID
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(cacheBucket))
