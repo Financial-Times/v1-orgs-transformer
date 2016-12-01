@@ -94,3 +94,31 @@ func (d *dummyRepo) GetTmeTermsFromIndex(startRecord int) ([]interface{}, error)
 func (d *dummyRepo) GetTmeTermById(uuid string) (interface{}, error) {
 	return d.terms[0], d.err
 }
+
+type testSuiteForOrgID struct {
+	name     string
+	terms    []term
+	orgUUIDs []orgUUID
+	err      error
+}
+
+func TestOrgIDs(t *testing.T) {
+	assert := assert.New(t)
+	tests := []testSuiteForOrgID{
+		{"Success", []term{term{CanonicalName: "European Union", RawID: "Nstein_GL_US_NY_Municipality_942968"}}, []orgUUID{orgUUID{UUID: "6a7edb42-c27a-3186-a0b9-7e3cdc91e16b"}}, nil},
+	}
+
+	for _, test := range tests {
+		runTestForOrgID(test, assert)
+	}
+}
+
+func runTestForOrgID(test testSuiteForOrgID, assert *assert.Assertions) {
+	repo := dummyRepo{terms: test.terms, err: test.err}
+	service := newOrgService(&repo, "", "ON", 10000, "test3.db")
+	defer service.shutdown()
+	time.Sleep(3 * time.Second) //waiting initialization to be finished
+	actualIDs, err := service.orgIds()
+	assert.Equal(test.orgUUIDs, actualIDs, fmt.Sprintf("%s: Expected orgIDs incorrect", test.name))
+	assert.Equal(test.err, err)
+}
