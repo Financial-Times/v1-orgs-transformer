@@ -79,12 +79,12 @@ func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	obj, err := h.service.orgCount()
+	count, err := h.service.orgCount()
 	if err != nil {
 		log.Errorf("Error calling orgCount service: %s", err.Error())
 		writeJSONMessage(writer, err.Error(), http.StatusInternalServerError)
 	}
-	writeJSONResponse(obj, true, writer)
+	fmt.Fprint(writer, count)
 }
 
 func (h *orgsHandler) getOrgIds(writer http.ResponseWriter, req *http.Request) {

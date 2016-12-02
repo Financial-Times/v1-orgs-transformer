@@ -33,7 +33,7 @@ func TestHandlers(t *testing.T) {
 		{"Service unavailable - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: false, initialised: false, orgs: []org{}}, http.StatusServiceUnavailable, "application/json", ""},
 		{"Success - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", getOrganisationsResponse},
 		{"Service unavailable - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: false, initialised: false, orgs: []org{}}, http.StatusServiceUnavailable, "application/json", ""},
-		{"Success - get count", newRequest("GET", "/transformers/organisations/__count"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", "1\n"},
+		{"Success - get count", newRequest("GET", "/transformers/organisations/__count"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", "1"},
 		{"Success - get IDs", newRequest("GET", "/transformers/organisations/__ids"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", testIDs},
 	}
 
