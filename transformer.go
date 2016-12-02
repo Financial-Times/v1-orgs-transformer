@@ -10,7 +10,7 @@ import (
 func transformOrg(tmeTerm term, taxonomyName string) org {
 	tmeIdentifier := buildTmeIdentifier(tmeTerm.RawID, taxonomyName)
 	orgUUID := uuid.NewMD5(uuid.UUID{}, []byte(tmeIdentifier)).String()
-	orgAliasList := append(buildAliasList(tmeTerm.Aliases), tmeTerm.CanonicalName)
+	orgAliasList := buildAliasList(tmeTerm.Aliases, tmeTerm.CanonicalName)
 	return org{
 		UUID:       orgUUID,
 		ProperName: tmeTerm.CanonicalName,
@@ -30,11 +30,25 @@ func buildTmeIdentifier(rawID string, tmeTermTaxonomyName string) string {
 	return id + "-" + taxonomyName
 }
 
-func buildAliasList(aList aliases) []string {
-	aliasList := make([]string, len(aList.Alias))
+func removeDuplicates(slice []string) []string {
+	newSlice := []string{}
+	seen := make(map[string]bool)
+	for _, v := range slice {
+		if _, ok := seen[v]; !ok {
+			newSlice = append(newSlice, v)
+			seen[v] = true
+		}
+	}
+	return newSlice
+}
+
+func buildAliasList(aList aliases, canonicalName string) []string {
+	aliasList := make([]string, len(aList.Alias)+1)
 	for k, v := range aList.Alias {
 		aliasList[k] = v.Name
 	}
+	aliasList = append(aliasList, canonicalName)
+	aliasList = removeDuplicates(aliasList)
 	return aliasList
 }
 
