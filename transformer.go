@@ -43,7 +43,7 @@ func removeDuplicates(slice []string) []string {
 }
 
 func buildAliasList(aList aliases, canonicalName string) []string {
-	aliasList := make([]string, len(aList.Alias)+1)
+	aliasList := make([]string, len(aList.Alias))
 	for k, v := range aList.Alias {
 		aliasList[k] = v.Name
 	}
