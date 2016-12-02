@@ -7,6 +7,7 @@ type org struct {
 	PrefLabel              string                 `json:"prefLabel"`
 	Type                   string                 `json:"type"`
 	AlternativeIdentifiers alternativeIdentifiers `json:"alternativeIdentifiers,omitempty"`
+	Aliases                []string               `json:"aliases,omitempty"`
 }
 
 type alternativeIdentifiers struct {
@@ -16,4 +17,8 @@ type alternativeIdentifiers struct {
 
 type orgLink struct {
 	APIURL string `json:"apiUrl"`
+}
+
+type orgUUID struct {
+	UUID string `json:"ID"`
 }

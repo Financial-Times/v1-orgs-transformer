@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 )
 
 const testUUID = "bba39990-c78d-3629-ae83-808c333c6dbc"
@@ -15,6 +16,7 @@ const getOrganisationByUUIDResponse = "{\"uuid\":\"bba39990-c78d-3629-ae83-808c3
 	"\"TME\":[\"MTE3-U3ViamVjdHM=\"]," +
 	"\"uuids\":[\"bba39990-c78d-3629-ae83-808c333c6dbc\"]" +
 	"}}\n"
+const testIDs = "{\"ID\":\"bba39990-c78d-3629-ae83-808c333c6dbc\"}\n"
 
 func TestHandlers(t *testing.T) {
 	assert := assert.New(t)
@@ -30,8 +32,9 @@ func TestHandlers(t *testing.T) {
 		{"Not found - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: false, initialised: true, orgs: []org{org{}}}, http.StatusNotFound, "application/json", ""},
 		{"Service unavailable - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: false, initialised: false, orgs: []org{}}, http.StatusServiceUnavailable, "application/json", ""},
 		{"Success - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", getOrganisationsResponse},
-		{"Not found - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: false, initialised: true, orgs: []org{}}, http.StatusNotFound, "application/json", ""},
 		{"Service unavailable - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: false, initialised: false, orgs: []org{}}, http.StatusServiceUnavailable, "application/json", ""},
+		{"Success - get count", newRequest("GET", "/transformers/organisations/__count"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", "1"},
+		{"Success - get IDs", newRequest("GET", "/transformers/organisations/__ids"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", testIDs},
 	}
 
 	for _, test := range tests {
@@ -53,6 +56,9 @@ func newRequest(method, url string) *http.Request {
 func router(s orgsService) *mux.Router {
 	m := mux.NewRouter()
 	h := newOrgsHandler(s)
+	m.HandleFunc("/transformers/organisations/__count", h.getOrgCount).Methods("GET")
+	m.HandleFunc("/transformers/organisations/__ids", h.getOrgIds).Methods("GET")
+	m.HandleFunc("/transformers/organisations/__reload", h.reloadOrgs).Methods("POST")
 	m.HandleFunc("/transformers/organisations", h.getOrgs).Methods("GET")
 	m.HandleFunc("/transformers/organisations/{uuid}", h.getOrgByUUID).Methods("GET")
 	return m
@@ -64,12 +70,12 @@ type dummyService struct {
 	initialised bool
 }
 
-func (s *dummyService) getOrgs() ([]orgLink, bool) {
+func (s *dummyService) getOrgs() ([]orgLink, error) {
 	var orgLinks []orgLink
 	for _, sub := range s.orgs {
 		orgLinks = append(orgLinks, orgLink{APIURL: "http://localhost:8080/transformers/organisations/" + sub.UUID})
 	}
-	return orgLinks, s.found
+	return orgLinks, nil
 }
 
 func (s *dummyService) getOrgByUUID(uuid string) (org, bool, error) {
@@ -82,4 +88,24 @@ func (s *dummyService) isInitialised() bool {
 
 func (s *dummyService) shutdown() error {
 	return nil
+}
+
+func (s *dummyService) orgCount() (int, error) {
+	return len(s.orgs), nil
+}
+
+func (s *dummyService) orgIds() ([]orgUUID, error) {
+	var orgUUIDs []orgUUID
+	for _, sub := range s.orgs {
+		orgUUIDs = append(orgUUIDs, orgUUID{UUID: sub.UUID})
+	}
+	return orgUUIDs, nil
+}
+
+func (s *dummyService) orgReload() error {
+	return nil
+}
+
+func (s *dummyService) isDataLoaded() bool {
+	return true
 }
