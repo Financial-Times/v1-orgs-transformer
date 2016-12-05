@@ -19,8 +19,9 @@ func transformOrg(tmeTerm term, taxonomyName string) org {
 			TME:   []string{tmeIdentifier},
 			Uuids: []string{orgUUID},
 		},
-		Type:    "Organisation",
-		Aliases: orgAliasList,
+		PrimaryType:   primaryType,
+		TypeHierarchy: orgTypes,
+		Aliases:       orgAliasList,
 	}
 }
 
