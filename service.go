@@ -104,7 +104,8 @@ func (s *orgServiceImpl) openDB() error {
 func (s *orgServiceImpl) init() error {
 	var wg sync.WaitGroup
 	responseCount := 0
-	s.dataLoaded = false
+
+	s.setDataLoaded(false)
 	log.Printf("Fetching organisations from TME\n")
 
 	err := s.openDB()
