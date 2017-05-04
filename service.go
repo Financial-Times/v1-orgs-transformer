@@ -130,6 +130,7 @@ func (s *orgServiceImpl) init() error {
 	wg.Wait()
 
 	count, _ := s.orgCount()
+	s.setDataLoaded(true)
 	log.Printf("Added %d orgs UUIDs\n", count)
 	return nil
 }
