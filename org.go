@@ -5,7 +5,8 @@ type org struct {
 	UUID                   string                 `json:"uuid"`
 	ProperName             string                 `json:"properName"`
 	PrefLabel              string                 `json:"prefLabel"`
-	Type                   string                 `json:"type"`
+	PrimaryType            string                 `json:"type"`
+	TypeHierarchy          []string               `json:"types"`
 	AlternativeIdentifiers alternativeIdentifiers `json:"alternativeIdentifiers,omitempty"`
 	Aliases                []string               `json:"aliases,omitempty"`
 }
@@ -22,3 +23,6 @@ type orgLink struct {
 type orgUUID struct {
 	UUID string `json:"ID"`
 }
+
+var primaryType = "Organisation"
+var orgTypes = []string{"Thing", "Concept", "Organisation"}

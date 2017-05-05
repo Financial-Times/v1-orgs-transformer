@@ -12,7 +12,7 @@ import (
 
 const testUUID = "bba39990-c78d-3629-ae83-808c333c6dbc"
 const getOrganisationsResponse = "[{\"apiUrl\":\"http://localhost:8080/transformers/organisations/bba39990-c78d-3629-ae83-808c333c6dbc\"}]\n"
-const getOrganisationByUUIDResponse = "{\"uuid\":\"bba39990-c78d-3629-ae83-808c333c6dbc\",\"properName\":\"European Union\",\"prefLabel\":\"European Union\",\"type\":\"Organisation\",\"alternativeIdentifiers\":{" +
+const getOrganisationByUUIDResponse = "{\"uuid\":\"bba39990-c78d-3629-ae83-808c333c6dbc\",\"properName\":\"European Union\",\"prefLabel\":\"European Union\",\"type\":\"Organisation\",\"types\":[\"Thing\",\"Concept\",\"Organisation\"],\"alternativeIdentifiers\":{" +
 	"\"TME\":[\"MTE3-U3ViamVjdHM=\"]," +
 	"\"uuids\":[\"bba39990-c78d-3629-ae83-808c333c6dbc\"]" +
 	"}}\n"
@@ -28,7 +28,7 @@ func TestHandlers(t *testing.T) {
 		contentType  string // Contents of the Content-Type header
 		body         string
 	}{
-		{"Success - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID, ProperName: "European Union", PrefLabel: "European Union", AlternativeIdentifiers: alternativeIdentifiers{Uuids: []string{testUUID}, TME: []string{"MTE3-U3ViamVjdHM="}}, Type: "Organisation"}}}, http.StatusOK, "application/json", getOrganisationByUUIDResponse},
+		{"Success - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID, ProperName: "European Union", PrefLabel: "European Union", AlternativeIdentifiers: alternativeIdentifiers{Uuids: []string{testUUID}, TME: []string{"MTE3-U3ViamVjdHM="}}, PrimaryType: primaryType, TypeHierarchy: orgTypes}}}, http.StatusOK, "application/json", getOrganisationByUUIDResponse},
 		{"Not found - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: false, initialised: true, orgs: []org{org{}}}, http.StatusNotFound, "application/json", ""},
 		{"Service unavailable - get organisation by uuid", newRequest("GET", fmt.Sprintf("/transformers/organisations/%s", testUUID)), &dummyService{found: false, initialised: false, orgs: []org{}}, http.StatusServiceUnavailable, "application/json", ""},
 		{"Success - get organisations", newRequest("GET", "/transformers/organisations"), &dummyService{found: true, initialised: true, orgs: []org{org{UUID: testUUID}}}, http.StatusOK, "application/json", getOrganisationsResponse},
