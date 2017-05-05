@@ -116,7 +116,7 @@ func main() {
 		servicesRouter.HandleFunc("/transformers/organisations/__ids", handler.getOrgIds).Methods("GET")
 		servicesRouter.HandleFunc("/transformers/organisations/__reload", handler.reloadOrgs).Methods("POST")
 
-		servicesRouter.HandleFunc("/transformers/organisations/{uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})}", handler.getOrgByUUID).Methods("GET")
+		servicesRouter.HandleFunc("/transformers/organisations/{uuid:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}", handler.getOrgByUUID).Methods("GET")
 		servicesRouter.HandleFunc("/transformers/organisations", handler.getOrgs).Methods("GET")
 
 		var h http.Handler = servicesRouter

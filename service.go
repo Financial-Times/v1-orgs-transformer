@@ -40,7 +40,7 @@ type orgServiceImpl struct {
 }
 
 func newOrgService(repo tmereader.Repository, baseURL string, taxonomyName string, maxTmeRecords int, cacheFileName string) orgsService {
-	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: true, dataLoaded: false, cacheFileName: cacheFileName}
+	s := &orgServiceImpl{repository: repo, baseURL: baseURL, taxonomyName: taxonomyName, maxTmeRecords: maxTmeRecords, initialised: false, dataLoaded: false, cacheFileName: cacheFileName}
 	go func(service *orgServiceImpl) {
 		err := service.init()
 		if err != nil {
@@ -104,6 +104,7 @@ func (s *orgServiceImpl) openDB() error {
 func (s *orgServiceImpl) init() error {
 	var wg sync.WaitGroup
 	responseCount := 0
+
 	log.Printf("Fetching organisations from TME\n")
 
 	err := s.openDB()
@@ -128,6 +129,8 @@ func (s *orgServiceImpl) init() error {
 	wg.Wait()
 
 	count, _ := s.orgCount()
+	s.setDataLoaded(true)
+	s.setInitialised(true)
 	log.Printf("Added %d orgs UUIDs\n", count)
 	return nil
 }
@@ -256,6 +259,7 @@ func (s *orgServiceImpl) orgIds() ([]orgUUID, error) {
 }
 
 func (s *orgServiceImpl) orgReload() error {
+	s.setDataLoaded(false)
 	err := s.shutdown()
 	if err != nil {
 		return err
