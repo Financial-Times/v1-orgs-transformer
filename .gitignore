@@ -4,7 +4,7 @@
 *.html
 *coverage.*
 *.iml
-v1-orgs-transformer
+/v1-orgs-transformer
 .idea/
 *.db
 *.lock
