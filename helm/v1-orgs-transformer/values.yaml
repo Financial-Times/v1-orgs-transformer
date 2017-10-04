@@ -14,9 +14,9 @@ resources:
 cache:
   size: 5Gi
   nfsServer: ""
-  path: ""
+  path: "/"
 env:
   PORT: 8080
-  BASE_URL: ""
-  CACHE_FILE_NAME: ""
+  BASE_URL: "http://v1-orgs-transformer:8080/transformers/organisations/"
+  CACHE_FILE_NAME: "/cache/v1-orgs-transformer.db"
   LOG_METRICS: false
