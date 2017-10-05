@@ -3,4 +3,4 @@ replicaCount: 1
 service:
   name: v1-orgs-transformer
 cache:
-  nfsServer: fs-6330fcaa.efs.eu-west-1.amazonaws.com
+  nfsServer: fs-a468c96d.efs.eu-west-1.amazonaws.com
