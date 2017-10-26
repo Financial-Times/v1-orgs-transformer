@@ -13,8 +13,6 @@ resources:
     memory: 1536Mi
 cache:
   size: 5Gi
-  nfsServer: ""
-  path: "/"
 env:
   PORT: 8080
   BASE_URL: "http://v1-orgs-transformer:8080/transformers/organisations/"
