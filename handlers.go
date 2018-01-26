@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Financial-Times/go-fthealth/v1a"
+	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/service-status-go/gtg"
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 type orgsHandler struct {
@@ -71,7 +71,6 @@ func writeJSONMessageWithStatus(w http.ResponseWriter, msg string, statusCode in
 	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", msg))
 }
 
-
 // ADMIN HANDLERS
 
 func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request) {
@@ -115,25 +114,49 @@ func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) 
 	writeJSONMessageWithStatus(writer, "Reloading V1 organisations", http.StatusAccepted)
 }
 
-func (h *orgsHandler) HealthCheck() v1a.Check {
-	return v1a.Check{
+func (h *orgsHandler) HealthCheck() fthealth.Check {
+	return fthealth.Check{
 		BusinessImpact:   "Unable to respond to requests",
 		Name:             "Check service has finished initilising.",
 		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
 		Severity:         1,
 		TechnicalSummary: "Cannot serve any content as data not loaded.",
-		Checker: func() (string, error) {
-			if h.service.isInitialised() {
-				return "Service is up and running", nil
-			}
-			return "Error as service initilising", errors.New("Service is initilising.")
-		},
+		Checker:          h.serviceInitialisedChecker,
 	}
 }
 
-func (h *orgsHandler) getGTG() gtg.Status {
-	if h.service.isInitialised() && h.service.isDataLoaded() {
-		return gtg.Status{GoodToGo: true}
+func (h *orgsHandler) serviceInitialisedChecker() (string, error) {
+	if h.service.isInitialised() {
+		return "Service is up and running", nil
 	}
-	return gtg.Status{GoodToGo: false}
+	return "Error as service initialising", errors.New("Service is initialising")
+}
+
+func (h *orgsHandler) dataLoadedChecker() (string, error) {
+	if h.service.isDataLoaded() {
+		return "Data loading is completed", nil
+	}
+	return "Error as loading data", errors.New("Data is loading")
+}
+
+func (h *orgsHandler) GTG() gtg.Status {
+	isInitialisedCheck := func() gtg.Status {
+		return gtgCheck(h.serviceInitialisedChecker)
+	}
+
+	dataLoadedCheck := func() gtg.Status {
+		return gtgCheck(h.dataLoadedChecker)
+	}
+
+	return gtg.FailFastParallelCheck([]gtg.StatusChecker{
+		isInitialisedCheck,
+		dataLoadedCheck,
+	})()
+}
+
+func gtgCheck(handler func() (string, error)) gtg.Status {
+	if _, err := handler(); err != nil {
+		return gtg.Status{GoodToGo: false, Message: err.Error()}
+	}
+	return gtg.Status{GoodToGo: true}
 }
