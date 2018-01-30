@@ -117,7 +117,7 @@ func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) 
 func (h *orgsHandler) HealthCheck() fthealth.Check {
 	return fthealth.Check{
 		BusinessImpact:   "Unable to respond to requests",
-		Name:             "Check service has finished initilising.",
+		Name:             "Check service has finished initialising.",
 		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
 		Severity:         1,
 		TechnicalSummary: "Cannot serve any content as data not loaded.",
@@ -136,7 +136,7 @@ func (h *orgsHandler) GTG() gtg.Status {
 
 func (h *orgsHandler) gtgCheck() gtg.Status {
 	if h.service.isInitialised() && h.service.isDataLoaded() {
-		return gtg.Status{GoodToGo: false, Message: "Service is initialising"}
+		return gtg.Status{GoodToGo: true}
 	}
-	return gtg.Status{GoodToGo: true}
+	return gtg.Status{GoodToGo: false}
 }
