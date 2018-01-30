@@ -121,42 +121,22 @@ func (h *orgsHandler) HealthCheck() fthealth.Check {
 		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
 		Severity:         1,
 		TechnicalSummary: "Cannot serve any content as data not loaded.",
-		Checker:          h.serviceInitialisedChecker,
+		Checker: func() (string, error) {
+			if h.service.isInitialised() {
+				return "Service is up and running", nil
+			}
+			return "Error as service initilising", errors.New("Service is initialising")
+		},
 	}
-}
-
-func (h *orgsHandler) serviceInitialisedChecker() (string, error) {
-	if h.service.isInitialised() {
-		return "Service is up and running", nil
-	}
-	return "Error as service initialising", errors.New("Service is initialising")
-}
-
-func (h *orgsHandler) dataLoadedChecker() (string, error) {
-	if h.service.isDataLoaded() {
-		return "Data loading is completed", nil
-	}
-	return "Error as loading data", errors.New("Data is loading")
 }
 
 func (h *orgsHandler) GTG() gtg.Status {
-	isInitialisedCheck := func() gtg.Status {
-		return gtgCheck(h.serviceInitialisedChecker)
-	}
-
-	dataLoadedCheck := func() gtg.Status {
-		return gtgCheck(h.dataLoadedChecker)
-	}
-
-	return gtg.FailFastParallelCheck([]gtg.StatusChecker{
-		isInitialisedCheck,
-		dataLoadedCheck,
-	})()
+	return gtg.FailFastParallelCheck([]gtg.StatusChecker{h.gtgCheck})()
 }
 
-func gtgCheck(handler func() (string, error)) gtg.Status {
-	if _, err := handler(); err != nil {
-		return gtg.Status{GoodToGo: false, Message: err.Error()}
+func (h *orgsHandler) gtgCheck() gtg.Status {
+	if h.service.isInitialised() && h.service.isDataLoaded() {
+		return gtg.Status{GoodToGo: false, Message: "Service is initialising"}
 	}
 	return gtg.Status{GoodToGo: true}
 }
