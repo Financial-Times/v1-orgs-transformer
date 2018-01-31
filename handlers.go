@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Financial-Times/go-fthealth/v1a"
+	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/service-status-go/gtg"
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 type orgsHandler struct {
@@ -71,7 +71,6 @@ func writeJSONMessageWithStatus(w http.ResponseWriter, msg string, statusCode in
 	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", msg))
 }
 
-
 // ADMIN HANDLERS
 
 func (h *orgsHandler) getOrgCount(writer http.ResponseWriter, req *http.Request) {
@@ -115,10 +114,10 @@ func (h *orgsHandler) reloadOrgs(writer http.ResponseWriter, req *http.Request) 
 	writeJSONMessageWithStatus(writer, "Reloading V1 organisations", http.StatusAccepted)
 }
 
-func (h *orgsHandler) HealthCheck() v1a.Check {
-	return v1a.Check{
+func (h *orgsHandler) HealthCheck() fthealth.Check {
+	return fthealth.Check{
 		BusinessImpact:   "Unable to respond to requests",
-		Name:             "Check service has finished initilising.",
+		Name:             "Check service has finished initialising.",
 		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
 		Severity:         1,
 		TechnicalSummary: "Cannot serve any content as data not loaded.",
@@ -126,12 +125,16 @@ func (h *orgsHandler) HealthCheck() v1a.Check {
 			if h.service.isInitialised() {
 				return "Service is up and running", nil
 			}
-			return "Error as service initilising", errors.New("Service is initilising.")
+			return "Error as service initilising", errors.New("Service is initialising")
 		},
 	}
 }
 
-func (h *orgsHandler) getGTG() gtg.Status {
+func (h *orgsHandler) GTG() gtg.Status {
+	return gtg.FailFastParallelCheck([]gtg.StatusChecker{h.gtgCheck})()
+}
+
+func (h *orgsHandler) gtgCheck() gtg.Status {
 	if h.service.isInitialised() && h.service.isDataLoaded() {
 		return gtg.Status{GoodToGo: true}
 	}

@@ -9,16 +9,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/Financial-Times/go-fthealth/v1a"
+	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	"github.com/Financial-Times/service-status-go/gtg"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/Financial-Times/tme-reader/tmereader"
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sethgrid/pester"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -107,9 +107,20 @@ func main() {
 		servicesRouter.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
 		servicesRouter.HandleFunc(status.BuildInfoPathDW, status.BuildInfoHandler)
 
-		servicesRouter.HandleFunc("/__health", v1a.Handler("V1 Org Transformer Healthchecks", "Checks for the health of the service", handler.HealthCheck()))
+		healthCheck := fthealth.TimedHealthCheck{
+			HealthCheck: fthealth.HealthCheck{
+				SystemCode:  "v1-orgs-transformer",
+				Name:        "V1 Org Transformer Healthchecks",
+				Description: "Checks for the health of the service",
+				Checks: []fthealth.Check{
+					handler.HealthCheck(),
+				},
+			},
+			Timeout: 10 * time.Second,
+		}
 
-		g2gHandler := status.NewGoodToGoHandler(gtg.StatusChecker(handler.getGTG))
+		servicesRouter.HandleFunc("/__health", fthealth.Handler(healthCheck))
+		g2gHandler := status.NewGoodToGoHandler(gtg.StatusChecker(handler.GTG))
 		servicesRouter.HandleFunc(status.GTGPath, g2gHandler)
 
 		servicesRouter.HandleFunc("/transformers/organisations/__count", handler.getOrgCount).Methods("GET")

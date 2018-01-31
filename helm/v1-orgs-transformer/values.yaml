@@ -9,6 +9,8 @@ image:
   repository: coco/v1-orgs-transformer
   pullPolicy: IfNotPresent
 resources:
+  requests:
+    memory: 1024Mi
   limits:
     memory: 1536Mi
 cache:
