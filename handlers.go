@@ -119,7 +119,7 @@ func (h *orgsHandler) HealthCheck() fthealth.Check {
 		BusinessImpact:   "Unable to respond to requests",
 		Name:             "Check service has finished initialising.",
 		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/v1-people-transformer",
-		Severity:         3,
+		Severity:         1,
 		TechnicalSummary: "Cannot serve any content as data not loaded.",
 		Checker: func() (string, error) {
 			if h.service.isInitialised() {
