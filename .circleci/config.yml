@@ -23,9 +23,6 @@ jobs:
             mkdir -p ${CIRCLE_TEST_REPORTS}
             mkdir -p ${CIRCLE_COVERAGE_REPORT}
       - run:
-          name: Go Build
-          command: go build -v
-      - run:
           name: Run Tests
           command: |
             go test -race -v +local | /go/bin/go-junit-report > ${CIRCLE_TEST_REPORTS}/main.xml
