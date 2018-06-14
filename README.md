@@ -1,3 +1,6 @@
+*DECOMISSIONED*
+See [Basic TME Transformer](https://github.com/Financial-Times/basic-tme-transformer) instead
+
 # v1-orgs-transformer
 
 [![CircleCI](https://circleci.com/gh/Financial-Times/v1-orgs-transformer.svg?style=svg)](https://circleci.com/gh/Financial-Times/v1-orgs-transformer) [![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/v1-orgs-transformer)](https://goreportcard.com/report/github.com/Financial-Times/v1-orgs-transformer) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/v1-orgs-transformer/badge.svg?branch=master)](https://coveralls.io/github/Financial-Times/v1-orgs-transformer?branch=master)
